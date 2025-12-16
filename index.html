@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT ORACLE // SYSTEM</title>
+    <style>
+        /* ESTHÉTIQUE "BUNKER / CIA" */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0a;
+            /* Noir profond */
+            color: #F4F1EA;
+            /* Beige papier */
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* EFFET CRT / SCANLINE (Optionnel pour le style) */
+
+        /* CRT FLICKER & SCANLINE */
+        .scanline {
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            opacity: 0.6;
+            position: absolute;
+            pointer-events: none;
+            top: 0;
+            left: 0;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% {
+                opacity: 0.55;
+            }
+
+            5% {
+                opacity: 0.60;
+            }
+
+            10% {
+                opacity: 0.52;
+            }
+
+            100% {
+                opacity: 0.55;
+            }
+        }
+
+        @keyframes glitch {
+            0% {
+                text-shadow: 2px 2px #ff00c1, -2px -2px #00fff9;
+            }
+
+            2% {
+                text-shadow: -2px -2px #ff00c1, 2px 2px #00fff9;
+            }
+
+            4% {
+                text-shadow: 0 0 transparent;
+            }
+        }
+
+        @keyframes glitch-anim-1 {
+            0% {
+                clip: rect(30px, 9999px, 10px, 0);
+            }
+
+            5% {
+                clip: rect(70px, 9999px, 90px, 0);
+            }
+
+            10% {
+                clip: rect(10px, 9999px, 5px, 0);
+            }
+
+            100% {
+                clip: rect(0, 0, 0, 0);
+            }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% {
+                clip: rect(10px, 9999px, 80px, 0);
+            }
+
+            5% {
+                clip: rect(2px, 9999px, 1px, 0);
+            }
+
+            10% {
+                clip: rect(90px, 9999px, 100px, 0);
+            }
+
+            100% {
+                clip: rect(0, 0, 0, 0);
+            }
+        }
+
+        /* CONTENEUR PRINCIPAL */
+        #container {
+            text-align: center;
+            width: 80%;
+            max-width: 1200px;
+        }
+
+        /* LES DIFFÉRENTES VUES (CACHÉES PAR DÉFAUT) */
+        .view {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        /* VUE 1 : QR CODE */
+        h1 {
+            font-size: 3rem;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #B71C1C;
+            display: inline-block;
+            padding-bottom: 10px;
+            position: relative;
+            animation: glitch 2.5s infinite;
+        }
+
+        h1::before,
+        h1::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+        }
+
+        h1::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff00c1;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-1 5s infinite linear alternate-reverse;
+        }
+
+        h1::after {
+            left: -2px;
+            text-shadow: -1px 0 #00fff9;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-2 5s infinite linear alternate-reverse;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #B71C1C;
+            margin-bottom: 40px;
+            animation: blink 1s infinite;
+        }
+
+        .qr-placeholder {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            display: block;
+            border: 4px solid #F4F1EA;
+        }
+
+        /* Tu remplaceras le background-color par ton image de QR Code */
+
+        /* VUE 2 : PROCESSING (FULL SCREEN + OVERLAY) */
+        #step-2.active {
+            display: block;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* WORD CLOUD - FULL BACKGROUND */
+        .word-cloud-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .floating-word {
+            position: absolute;
+            color: #B71C1C;
+            font-weight: bold;
+            transition: transform 0.3s ease, font-size 0.3s ease;
+            /* No continuous animation, state changes based on logic */
+        }
+
+        /* RIGHT: CONSOLE - FLOATING BOX */
+        .console-container {
+            position: absolute;
+            bottom: 50px;
+            right: 50px;
+            width: 400px;
+            height: 300px;
+            z-index: 10;
+
+            background-color: rgba(10, 10, 10, 0.95);
+            border: 2px solid #F4F1EA;
+            padding: 15px;
+            box-sizing: border-box;
+
+            font-family: 'Courier New', Courier, monospace;
+            /* Match site font */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            overflow: hidden;
+
+            animation: border-glitch 4s infinite;
+        }
+
+        .log-entry {
+            font-size: 0.8rem;
+            color: #F4F1EA;
+            /* Beige text */
+            margin-bottom: 5px;
+            opacity: 0.9;
+            text-align: left;
+            border-bottom: 1px dotted #333;
+        }
+
+        @keyframes border-glitch {
+            0% {
+                border-color: #F4F1EA;
+                transform: translate(0, 0);
+            }
+
+            2% {
+                border-color: #B71C1C;
+                transform: translate(-2px, 2px);
+            }
+
+            4% {
+                border-color: #F4F1EA;
+                transform: translate(2px, -2px);
+            }
+
+            6% {
+                transform: translate(0, 0);
+            }
+
+            90% {
+                border-color: #F4F1EA;
+                transform: translate(0, 0);
+            }
+
+            92% {
+                border-color: #B71C1C;
+                transform: translate(1px, 1px);
+            }
+
+            94% {
+                border-color: #F4F1EA;
+                transform: translate(-1px, -1px);
+            }
+
+            100% {
+                border-color: #F4F1EA;
+                transform: translate(0, 0);
+            }
+        }
+
+        /* VUE 3 : FINAL REVEAL */
+        .image-container {
+            display: inline-block;
+            position: relative;
+            max-width: 100%;
+            overflow: hidden;
+            border: 2px solid #F4F1EA;
+        }
+
+        .final-image {
+            width: 100%;
+            max-height: 70vh;
+            object-fit: cover;
+            display: block;
+            filter: grayscale(100%) contrast(1.2);
+        }
+
+        .ticker-badge {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #B71C1C;
+            color: #0a0a0a;
+            padding: 5px 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            z-index: 2;
+        }
+
+        .breaking-news {
+            background-color: #B71C1C;
+            color: #000;
+            padding: 10px 0;
+            font-size: 2rem;
+            font-weight: bold;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+
+        .marquee-content {
+            display: inline-block;
+            padding-left: 200px;
+            /* Make space for badge + extra */
+            animation: scroll-left 20s linear infinite;
+            /* Slower */
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="scanline"></div>
+
+    <div id="container">
+
+        <div id="step-1" class="view active">
+            <h1 data-text="Protocol 2050">Protocol 2050</h1>
+            <div class="subtitle">AWAITING PUBLIC INPUT_</div>
+
+            <img src="qr-code.png" alt="SCAN QR CODE" class="qr-placeholder">
+
+            <p style="margin-top: 30px; font-size: 0.8rem; opacity: 0.6;">SECURE CONNECTION ESTABLISHED via TALLY.SO</p>
+        </div>
+
+        <div id="step-2" class="view">
+            <!-- Fullscreen Word Cloud -->
+            <div id="word-cloud" class="word-cloud-container">
+                <!-- Words will be injected here -->
+            </div>
+            <!-- Floating Console -->
+            <div id="console-log" class="console-container">
+                <!-- Logs will be injected here -->
+            </div>
+        </div>
+
+        <div id="step-3" class="view">
+            <div class="image-container">
+                <img id="final-img" src="" class="final-image">
+
+                <div class="ticker-badge">BREAKING NEWS</div>
+
+                <div id="headline" class="breaking-news">
+                    <span id="headline-text" class="marquee-content">HEADLINE LOADING...</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // CONFIGURATION DES SCÉNARIOS
+        // Remplace les noms de fichiers par tes images générées (ex: 'war.jpg')
+        const scenarios = {
+            1: { img: "pessimiste.jpg", title: "GLOBAL HABITABILITY INDEX HITS ZERO." },
+            2: { img: "guerre.jpg", title: "GEO-WARFARE DECLARED IN ARCTIC." },
+            3: { img: "optimiste.jpg", title: "ETERNAL WHITE SKY PROJECT BEGINS." }
+        };
+
+        // MOTS CLÉS POUR LA SIMULATION (Ça fait "Matrix")
+        const keywords = ["WAR", "HOPE", "FAMINE", "ICE", "DROUGHT", "SURVIVAL", "COLLAPSE", "TECHNOLOGY", "RUSSIA", "INDIA", "SYSTEM FAILURE"];
+
+        let currentStep = 1;
+
+        // ECOUTEUR CLAVIER (C'est ta télécommande)
+        document.addEventListener('keydown', function (event) {
+
+            // ESPACE : Passer du QR Code au Processing
+            if (event.code === 'Space' && currentStep === 1) {
+                currentStep = 2;
+                switchView('step-2');
+                startProcessingSimulation();
+            }
+
+            // TOUCHES 1, 2, 3 : Déclencher le Reveal correspondant
+            if (currentStep === 2) {
+                if (event.key === '1') triggerReveal(1); // Pessimiste
+                if (event.key === '2') triggerReveal(2); // Guerre
+                if (event.key === '3') triggerReveal(3); // Optimiste
+            }
+        });
+
+        function switchView(id) {
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+        // Simule le défilement de code et de mots clés
+        function startProcessingSimulation() {
+            const wordCloud = document.getElementById('word-cloud');
+            const consoleLog = document.getElementById('console-log');
+
+            // PHYSICS ENGINE STATE
+            const activeWordObjects = []; // Stores {el, x, y, vx, vy, width, height, mass}
+            let animationFrameId;
+            let timeoutId;
+
+            // TIMING CONFIG
+            const TOTAL_DURATION = 25000; // 25 seconds
+            const startTime = Date.now();
+
+            // START PHYSICS LOOP
+            function updatePhysics() {
+                if (currentStep !== 2) {
+                    cancelAnimationFrame(animationFrameId);
+                    return;
+                }
+
+                // Get Console Bounding Box for collision
+                const consoleRect = consoleLog.getBoundingClientRect();
+                const containerRect = wordCloud.getBoundingClientRect();
+
+                activeWordObjects.forEach((obj, i) => {
+                    // Update dimensions based on current DOM size (if growing)
+                    obj.width = obj.el.offsetWidth;
+                    obj.height = obj.el.offsetHeight;
+
+                    // 1. apply forces
+                    // Center Gravity (weak pull to screen center)
+                    const centerX = containerRect.width / 2;
+                    const centerY = containerRect.height / 2;
+                    obj.vx += (centerX - obj.x) * 0.002;
+                    obj.vy += (centerY - obj.y) * 0.002;
+
+                    // Repulsion from other words
+                    for (let j = 0; j < activeWordObjects.length; j++) {
+                        if (i === j) continue;
+                        const other = activeWordObjects[j];
+
+                        const dx = obj.x - other.x;
+                        const dy = obj.y - other.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const minDist = (obj.width / 2 + other.width / 2) * 1.2; // Add padding
+
+                        if (dist < minDist && dist > 0) {
+                            const force = (minDist - dist) * 0.1; // Spring force
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+                            obj.vx += nx * force;
+                            obj.vy += ny * force;
+                        }
+                    }
+
+                    // Repulsion from Console (Strong Force)
+                    // Simple AABB check + Repulsion
+                    // Console is at bottom right, so we usually just push Up/Left
+                    // Map physics coordinates (relative to container) to screen coords
+                    const screenX = containerRect.left + obj.x;
+                    const screenY = containerRect.top + obj.y;
+
+                    // define safety margin
+                    const margin = 50;
+                    if (
+                        screenX + obj.width / 2 + margin > consoleRect.left &&
+                        screenY + obj.height / 2 + margin > consoleRect.top
+                    ) {
+                        // Push away strongly
+                        obj.vx -= 2;
+                        obj.vy -= 2;
+                    }
+
+                    // Wall Boundaries
+                    if (obj.x < obj.width / 2) obj.vx += 1;
+                    if (obj.x > containerRect.width - obj.width / 2) obj.vx -= 1;
+                    if (obj.y < obj.height / 2) obj.vy += 1;
+                    if (obj.y > containerRect.height - obj.height / 2) obj.vy -= 1;
+
+                    // 2. update velocity & position
+                    obj.vx *= 0.9; // Friction
+                    obj.vy *= 0.9;
+                    obj.x += obj.vx;
+                    obj.y += obj.vy;
+
+                    // 3. apply to DOM
+                    // Centering the element on x,y
+                    obj.el.style.left = (obj.x - obj.width / 2) + 'px';
+                    obj.el.style.top = (obj.y - obj.height / 2) + 'px';
+                });
+
+                animationFrameId = requestAnimationFrame(updatePhysics);
+            }
+            updatePhysics();
+
+
+            // EVENT SCHEDULER (Bell Curve Timing)
+            function scheduleNextEvent() {
+                if (currentStep !== 2) return;
+
+                const elapsed = Date.now() - startTime;
+                if (elapsed >= TOTAL_DURATION) {
+                    // END SIMULATION: PEACEFUL STATE
+                    // 1. Stop Spawning (don't schedule next timeout)
+                    clearTimeout(timeoutId);
+
+                    // 2. Continue Physics (do nothing to animationFrameId)
+
+                    // 3. Console End State
+                    consoleLog.style.animation = 'none'; // Stop glitch
+                    consoleLog.style.borderColor = '#F4F1EA'; // Stable border
+
+                    const log = document.createElement('div');
+                    log.className = 'log-entry';
+                    log.style.color = '#F4F1EA';
+                    log.style.borderTop = '1px solid #F4F1EA';
+                    log.style.marginTop = '10px';
+                    log.style.paddingTop = '10px';
+                    log.innerText = `> SYSTEM ANALYSIS COMPLETE.\n> WAITING FOR USER INPUT...`;
+                    consoleLog.appendChild(log);
+                    consoleLog.scrollTop = consoleLog.scrollHeight;
+
+                    return;
+                }
+
+                // CALCULATE DELAY
+                const progress = elapsed / TOTAL_DURATION; // 0.0 to 1.0
+                // Bell curve: High delay at ends, Low delay in middle (0.5)
+                // Curve: y = |0.5 - p| * 2 -> goes from 1 to 0 to 1
+                const curve = Math.abs(0.5 - progress) * 2;
+                // Delay range: 100ms (fastest) to 1200ms (slowest)
+                const delay = 100 + (curve * 1100);
+
+                // DO ACTION
+                spawnOrUpdate();
+
+                // SCHEDULE NEXT
+                timeoutId = setTimeout(scheduleNextEvent, delay);
+            }
+
+            let pidCount = 0;
+            const activeWordsMap = {}; // text -> object ref
+
+            function spawnOrUpdate() {
+                // 1. CONSOLE LOG
+                pidCount++;
+                const log = document.createElement('div');
+                log.className = 'log-entry';
+                const hex = '0x' + Math.floor(Math.random() * 16777215).toString(16).toUpperCase();
+                const randomWordForLog = keywords[Math.floor(Math.random() * keywords.length)];
+                log.innerText = `[${hex}] PID_${pidCount}: PROCESS ${randomWordForLog}...`;
+                consoleLog.appendChild(log);
+                consoleLog.scrollTop = consoleLog.scrollHeight;
+                if (consoleLog.children.length > 15) consoleLog.removeChild(consoleLog.firstChild);
+
+
+                // 2. WORD CLOUD ACTION
+                const randomWord = keywords[Math.floor(Math.random() * keywords.length)];
+
+                if (activeWordsMap[randomWord]) {
+                    // GROW EXISTING
+                    const obj = activeWordsMap[randomWord];
+                    let size = parseFloat(obj.el.getAttribute('data-size'));
+                    size += 0.5; // Grow
+                    obj.el.style.fontSize = size + 'rem';
+                    obj.el.setAttribute('data-size', size);
+
+                    // Flash
+                    obj.el.style.color = '#ff0000';
+                    setTimeout(() => obj.el.style.color = '#B71C1C', 200);
+
+                    // Add "Excite" force (push neighbors slightly on growth)
+                    obj.mass += 1; // get heavier
+
+                } else {
+                    // SPAWN NEW
+                    const wordEl = document.createElement('div');
+                    wordEl.className = 'floating-word';
+                    wordEl.innerText = randomWord;
+                    wordEl.setAttribute('data-size', '1.5');
+                    wordEl.style.fontSize = '1.5rem';
+                    wordCloud.appendChild(wordEl);
+
+                    // Initial Position: Random but try to avoid console
+                    // Just spawn near center for "bubble" effect, physics will push them out
+                    const containerRect = wordCloud.getBoundingClientRect();
+                    const startX = containerRect.width / 2 + (Math.random() - 0.5) * 100;
+                    const startY = containerRect.height / 2 + (Math.random() - 0.5) * 100;
+
+                    const obj = {
+                        el: wordEl,
+                        x: startX,
+                        y: startY,
+                        vx: (Math.random() - 0.5) * 5, // random velocity
+                        vy: (Math.random() - 0.5) * 5,
+                        width: 0, // will be set in frame 1
+                        height: 0,
+                        mass: 1
+                    };
+
+                    activeWordObjects.push(obj);
+                    activeWordsMap[randomWord] = obj;
+                }
+            }
+
+            // Start the loop
+            scheduleNextEvent();
+        }
+
+        // Affiche l'image finale
+        function triggerReveal(id) {
+            currentStep = 3;
+            const data = scenarios[id];
+            document.getElementById('final-img').src = data.img;
+            // Update the text inside the marquee span
+            document.getElementById('headline-text').innerText = data.title + "   ///   " + data.title + "   ///   " + data.title;
+            switchView('step-3');
+        }
+
+    </script>
+</body>
+
+</html>
